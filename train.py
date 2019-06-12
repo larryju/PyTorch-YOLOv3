@@ -1,45 +1,35 @@
 from __future__ import division
 
-from models import *
-from utils.logger import *
-from utils.utils import *
-from utils.datasets import *
-from utils.parse_config import *
-from test import evaluate
+import argparse
+import datetime
 
 from terminaltables import AsciiTable
-
-import os
-import sys
-import time
-import datetime
-import argparse
-
-import torch
 from torch.utils.data import DataLoader
-from torchvision import datasets
-from torchvision import transforms
-from torch.autograd import Variable
-import torch.optim as optim
+
+from models import *
+from test import evaluate
+from utils.datasets import *
+from utils.parse_config import *
+from utils.utils import *
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
-    parser.add_argument("--epochs", type=int, default=100, help="number of epochs")
-    parser.add_argument("--batch_size", type=int, default=8, help="size of each image batch")
-    parser.add_argument("--gradient_accumulations", type=int, default=2, help="number of gradient accums before step")
-    parser.add_argument("--model_def", type=str, default="config/yolov3.cfg", help="path to model definition file")
-    parser.add_argument("--data_config", type=str, default="config/coco.data", help="path to data config file")
-    parser.add_argument("--pretrained_weights", type=str, help="if specified starts from checkpoint model")
-    parser.add_argument("--n_cpu", type=int, default=8, help="number of cpu threads to use during batch generation")
+    parser.add_argument("--epochs", type=int, default=101, help="number of epochs")
+    parser.add_argument("--batch_size", type=int, default=16, help="size of each image batch")
+    parser.add_argument("--gradient_accumulations", type=int, default=4, help="number of gradient accums before step")
+    parser.add_argument("--model_def", type=str, default="config/yolov3-tiny.cfg", help="path to model definition file")
+    parser.add_argument("--data_config", type=str, default="config/face.data", help="path to data config file")
+    parser.add_argument("--pretrained_weights", type=str, default='', help="if specified starts from checkpoint model")
+    parser.add_argument("--n_cpu", type=int, default=1, help="number of cpu threads to use during batch generation")
     parser.add_argument("--img_size", type=int, default=416, help="size of each image dimension")
-    parser.add_argument("--checkpoint_interval", type=int, default=1, help="interval between saving model weights")
-    parser.add_argument("--evaluation_interval", type=int, default=1, help="interval evaluations on validation set")
+    parser.add_argument("--checkpoint_interval", type=int, default=200, help="interval between saving model weights")
+    parser.add_argument("--evaluation_interval", type=int, default=100, help="interval evaluations on validation set")
     parser.add_argument("--compute_map", default=False, help="if True computes mAP every tenth batch")
-    parser.add_argument("--multiscale_training", default=True, help="allow for multi-scale training")
+    parser.add_argument("--multiscale_training", default=False, help="allow for multi-scale training")
     opt = parser.parse_args()
     print(opt)
 
-    logger = Logger("logs")
+    # logger = Logger("logs")
 
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
@@ -79,10 +69,6 @@ if __name__ == "__main__":
     metrics = [
         "grid_size",
         "loss",
-        "x",
-        "y",
-        "w",
-        "h",
         "conf",
         "cls",
         "cls_acc",
@@ -110,9 +96,6 @@ if __name__ == "__main__":
                 optimizer.step()
                 optimizer.zero_grad()
 
-            # ----------------
-            #   Log progress
-            # ----------------
 
             log_str = "\n---- [Epoch %d/%d, Batch %d/%d] ----\n" % (epoch, opt.epochs, batch_i, len(dataloader))
 
@@ -125,15 +108,6 @@ if __name__ == "__main__":
                 formats["cls_acc"] = "%.2f%%"
                 row_metrics = [formats[metric] % yolo.metrics.get(metric, 0) for yolo in model.yolo_layers]
                 metric_table += [[metric, *row_metrics]]
-
-                # Tensorboard logging
-                tensorboard_log = []
-                for j, yolo in enumerate(model.yolo_layers):
-                    for name, metric in yolo.metrics.items():
-                        if name != "grid_size":
-                            tensorboard_log += [(f"{name}_{j+1}", metric)]
-                tensorboard_log += [("loss", loss.item())]
-                logger.list_of_scalars_summary(tensorboard_log, batches_done)
 
             log_str += AsciiTable(metric_table).table
             log_str += f"\nTotal loss {loss.item()}"
@@ -165,7 +139,7 @@ if __name__ == "__main__":
                 ("val_mAP", AP.mean()),
                 ("val_f1", f1.mean()),
             ]
-            logger.list_of_scalars_summary(evaluation_metrics, epoch)
+            # logger.list_of_scalars_summary(evaluation_metrics, epoch)
 
             # Print class APs and mAP
             ap_table = [["Index", "Class name", "AP"]]

@@ -1,0 +1,4 @@
+classes= 1
+train=data/face/train.txt
+valid=data/face/valid.txt
+names=data/face/classes.names
