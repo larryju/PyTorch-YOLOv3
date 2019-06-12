@@ -31,7 +31,7 @@ if __name__ == "__main__":
 
     # logger = Logger("logs")
 
-    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+    device = torch.device("cuda:1" if torch.cuda.is_available() else "cpu")
 
     os.makedirs("output", exist_ok=True)
     os.makedirs("checkpoints", exist_ok=True)
@@ -88,7 +88,7 @@ if __name__ == "__main__":
             imgs = Variable(imgs.to(device))
             targets = Variable(targets.to(device), requires_grad=False)
 
-            loss, outputs = model(imgs, targets)
+            loss, outputs = model(imgs, targets, device=device)
             loss.backward()
 
             if batches_done % opt.gradient_accumulations:
