@@ -14,16 +14,16 @@ from utils.utils import *
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
-    parser.add_argument("--epochs", type=int, default=101, help="number of epochs")
+    parser.add_argument("--epochs", type=int, default=100, help="number of epochs")
     parser.add_argument("--batch_size", type=int, default=16, help="size of each image batch")
     parser.add_argument("--gradient_accumulations", type=int, default=4, help="number of gradient accums before step")
     parser.add_argument("--model_def", type=str, default="config/yolov3-tiny.cfg", help="path to model definition file")
-    parser.add_argument("--data_config", type=str, default="config/face.data", help="path to data config file")
+    parser.add_argument("--data_config", type=str, default="config/face_test.data", help="path to data config file")
     parser.add_argument("--pretrained_weights", type=str, default='', help="if specified starts from checkpoint model")
-    parser.add_argument("--n_cpu", type=int, default=1, help="number of cpu threads to use during batch generation")
+    parser.add_argument("--n_cpu", type=int, default=4, help="number of cpu threads to use during batch generation")
     parser.add_argument("--img_size", type=int, default=416, help="size of each image dimension")
-    parser.add_argument("--checkpoint_interval", type=int, default=200, help="interval between saving model weights")
-    parser.add_argument("--evaluation_interval", type=int, default=100, help="interval evaluations on validation set")
+    parser.add_argument("--checkpoint_interval", type=int, default=1, help="interval between saving model weights")
+    parser.add_argument("--evaluation_interval", type=int, default=1, help="interval evaluations on validation set")
     parser.add_argument("--compute_map", default=False, help="if True computes mAP every tenth batch")
     parser.add_argument("--multiscale_training", default=False, help="allow for multi-scale training")
     opt = parser.parse_args()
@@ -58,7 +58,7 @@ if __name__ == "__main__":
     dataloader = torch.utils.data.DataLoader(
         dataset,
         batch_size=opt.batch_size,
-        shuffle=True,
+        shuffle=False,
         num_workers=opt.n_cpu,
         pin_memory=True,
         collate_fn=dataset.collate_fn,
@@ -92,10 +92,8 @@ if __name__ == "__main__":
             loss.backward()
 
             if batches_done % opt.gradient_accumulations:
-                # Accumulates gradient before each step
                 optimizer.step()
                 optimizer.zero_grad()
-
 
             log_str = "\n---- [Epoch %d/%d, Batch %d/%d] ----\n" % (epoch, opt.epochs, batch_i, len(dataloader))
 
@@ -132,6 +130,7 @@ if __name__ == "__main__":
                 nms_thres=0.5,
                 img_size=opt.img_size,
                 batch_size=8,
+                device=device
             )
             evaluation_metrics = [
                 ("val_precision", precision.mean()),

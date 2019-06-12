@@ -264,26 +264,22 @@ def non_max_suppression(prediction, conf_thres=0.5, nms_thres=0.4):
     return output
 
 
-def build_targets(pred_boxes, pred_cls, target, anchors, ignore_thres):
-
-    ByteTensor = torch.cuda.ByteTensor if pred_boxes.is_cuda else torch.ByteTensor
-    FloatTensor = torch.cuda.FloatTensor if pred_boxes.is_cuda else torch.FloatTensor
-
+def build_targets(pred_boxes, pred_cls, target, anchors, ignore_thres, device):
     nB = pred_boxes.size(0)
     nA = pred_boxes.size(1)
     nC = pred_cls.size(-1)
     nG = pred_boxes.size(2)
 
     # Output tensors
-    obj_mask = ByteTensor(nB, nA, nG, nG).fill_(0)
-    noobj_mask = ByteTensor(nB, nA, nG, nG).fill_(1)
-    class_mask = FloatTensor(nB, nA, nG, nG).fill_(0)
-    iou_scores = FloatTensor(nB, nA, nG, nG).fill_(0)
-    tx = FloatTensor(nB, nA, nG, nG).fill_(0)
-    ty = FloatTensor(nB, nA, nG, nG).fill_(0)
-    tw = FloatTensor(nB, nA, nG, nG).fill_(0)
-    th = FloatTensor(nB, nA, nG, nG).fill_(0)
-    tcls = FloatTensor(nB, nA, nG, nG, nC).fill_(0)
+    obj_mask = torch.ByteTensor(nB, nA, nG, nG).fill_(0).to(device)
+    noobj_mask = torch.ByteTensor(nB, nA, nG, nG).fill_(1).to(device)
+    class_mask = torch.FloatTensor(nB, nA, nG, nG).fill_(0).to(device)
+    iou_scores = torch.FloatTensor(nB, nA, nG, nG).fill_(0).to(device)
+    tx = torch.FloatTensor(nB, nA, nG, nG).fill_(0).to(device)
+    ty = torch.FloatTensor(nB, nA, nG, nG).fill_(0).to(device)
+    tw = torch.FloatTensor(nB, nA, nG, nG).fill_(0).to(device)
+    th = torch.FloatTensor(nB, nA, nG, nG).fill_(0).to(device)
+    tcls = torch.FloatTensor(nB, nA, nG, nG, nC).fill_(0).to(device)
 
     # Convert to position relative to box
     target_boxes = target[:, 2:6] * nG
@@ -291,6 +287,7 @@ def build_targets(pred_boxes, pred_cls, target, anchors, ignore_thres):
     gwh = target_boxes[:, 2:]
     # Get anchors with best iou
     ious = torch.stack([bbox_wh_iou(anchor, gwh) for anchor in anchors])
+
     best_ious, best_n = ious.max(0)
     # Separate target values
     b, target_labels = target[:, :2].long().t()
@@ -303,12 +300,21 @@ def build_targets(pred_boxes, pred_cls, target, anchors, ignore_thres):
 
     # Set noobj mask to zero where iou exceeds ignore threshold
     for i, anchor_ious in enumerate(ious.t()):
-        noobj_mask[b[i], anchor_ious > ignore_thres, gj[i], gi[i]] = 0
+        print(anchor_ious)
+
+        e1 = b[i]
+        e2 = anchor_ious > ignore_thres
+        e3 = gj[i]
+        e4 = gi[i]
+        print(e1, e2.size(), e3, e4)
+        print(e2)
+        noobj_mask[e1, e2, e3, e4] = 0
 
     # Coordinates
     tx[b, best_n, gj, gi] = gx - gx.floor()
     ty[b, best_n, gj, gi] = gy - gy.floor()
     # Width and height
+
     tw[b, best_n, gj, gi] = torch.log(gw / anchors[best_n][:, 0] + 1e-16)
     th[b, best_n, gj, gi] = torch.log(gh / anchors[best_n][:, 1] + 1e-16)
     # One-hot encoding of label

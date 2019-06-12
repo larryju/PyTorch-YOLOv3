@@ -1,4 +1,5 @@
 classes= 1
-train=data/face/train.txt
-valid=data/face/valid.txt
-names=data/face/classes.names
+train=/home/jky/project/yolo/pytorch_yolov3/utils/face_yolo/train.txt
+valid=/home/jky/project/yolo/pytorch_yolov3/utils/face_yolo/valid.txt
+names=/home/jky/project/yolo/pytorch_yolov3/data/face/classes.names
+backup = /home/jky/project/yolo/pytorch_yolov3/data/face/backup
