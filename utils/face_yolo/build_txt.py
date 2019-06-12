@@ -7,7 +7,7 @@ import os
 
 image_root = "E:\\datasets\\face\\WIDER_val\\images"
 
-train_txt = open('val.txt', encoding='utf-8', mode='a+')
+train_txt = open('valid.txt', encoding='utf-8', mode='a+')
 
 prefix = image_root
 

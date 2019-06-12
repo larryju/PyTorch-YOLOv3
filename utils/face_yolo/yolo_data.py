@@ -30,7 +30,6 @@ while label_file:
     img_w = img.shape[1]
     img_h = img.shape[0]
 
-    print(img.shape)
     face_num = int(label_file.readline().strip('\n'))
     yolo_file = open(label_path, 'w+', encoding='utf-8')
 
