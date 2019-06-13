@@ -11,6 +11,8 @@ from test import evaluate
 from utils.datasets import *
 from utils.parse_config import *
 from utils.utils import *
+import os
+import time
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
@@ -20,7 +22,7 @@ if __name__ == "__main__":
     parser.add_argument("--model_def", type=str, default="config/yolov3-tiny.cfg", help="path to model definition file")
     parser.add_argument("--data_config", type=str, default="config/face_test.data", help="path to data config file")
     parser.add_argument("--pretrained_weights", type=str, default='', help="if specified starts from checkpoint model")
-    parser.add_argument("--n_cpu", type=int, default=4, help="number of cpu threads to use during batch generation")
+    parser.add_argument("--n_cpu", type=int, default=0, help="number of cpu threads to use during batch generation")
     parser.add_argument("--img_size", type=int, default=416, help="size of each image dimension")
     parser.add_argument("--checkpoint_interval", type=int, default=1, help="interval between saving model weights")
     parser.add_argument("--evaluation_interval", type=int, default=1, help="interval evaluations on validation set")
@@ -60,7 +62,7 @@ if __name__ == "__main__":
         batch_size=opt.batch_size,
         shuffle=False,
         num_workers=opt.n_cpu,
-        pin_memory=True,
+        pin_memory=False,
         collate_fn=dataset.collate_fn,
     )
 
@@ -85,8 +87,8 @@ if __name__ == "__main__":
         for batch_i, (_, imgs, targets) in enumerate(dataloader):
             batches_done = len(dataloader) * epoch + batch_i
 
-            imgs = Variable(imgs.to(device))
-            targets = Variable(targets.to(device), requires_grad=False)
+            imgs = imgs.to(device)
+            targets = targets.to(device)
 
             loss, outputs = model(imgs, targets, device=device)
             loss.backward()
@@ -96,10 +98,7 @@ if __name__ == "__main__":
                 optimizer.zero_grad()
 
             log_str = "\n---- [Epoch %d/%d, Batch %d/%d] ----\n" % (epoch, opt.epochs, batch_i, len(dataloader))
-
             metric_table = [["Metrics", *[f"YOLO Layer {i}" for i in range(len(model.yolo_layers))]]]
-
-            # Log metrics at each YOLO layer
             for i, metric in enumerate(metrics):
                 formats = {m: "%.6f" for m in metrics}
                 formats["grid_size"] = "%2d"
@@ -121,7 +120,7 @@ if __name__ == "__main__":
 
         if epoch % opt.evaluation_interval == 0:
             print("\n---- Evaluating Model ----")
-            # Evaluate the model on the validation set
+
             precision, recall, AP, f1, ap_class = evaluate(
                 model,
                 path=valid_path,
@@ -129,7 +128,7 @@ if __name__ == "__main__":
                 conf_thres=0.5,
                 nms_thres=0.5,
                 img_size=opt.img_size,
-                batch_size=8,
+                batch_size=32,
                 device=device
             )
             evaluation_metrics = [

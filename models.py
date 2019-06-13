@@ -136,12 +136,9 @@ class YOLOLayer(nn.Module):
         grid_size = x.size(2)
 
         prediction = (
-            x.view(num_samples, self.num_anchors, self.num_classes + 5, grid_size, grid_size)
-                .permute(0, 1, 3, 4, 2)
-                .contiguous()
-        )
+            x.view(num_samples, self.num_anchors, self.num_classes + 5, grid_size, grid_size).permute(0, 1, 3, 4,
+                                                                                                      2).contiguous())
 
-        # Get outputs
         x = torch.sigmoid(prediction[..., 0])  # Center x
         y = torch.sigmoid(prediction[..., 1])  # Center y
         w = prediction[..., 2]  # Width
@@ -149,11 +146,9 @@ class YOLOLayer(nn.Module):
         pred_conf = torch.sigmoid(prediction[..., 4])  # Conf
         pred_cls = torch.sigmoid(prediction[..., 5:])  # Cls pred.
 
-        # If grid size does not match current we compute new offsets
         if grid_size != self.grid_size:
             self.compute_grid_offsets(grid_size, device)
 
-        # Add offset and scale with anchors
         pred_boxes = torch.FloatTensor(prediction[..., :4].shape).to(device)
         pred_boxes[..., 0] = x.data + self.grid_x
         pred_boxes[..., 1] = y.data + self.grid_y

@@ -1,14 +1,8 @@
 from __future__ import division
-import math
-import time
-import tqdm
-import torch
-import torch.nn as nn
-import torch.nn.functional as F
-from torch.autograd import Variable
+
 import numpy as np
-import matplotlib.pyplot as plt
-import matplotlib.patches as patches
+import torch
+import tqdm
 
 
 def to_cpu(tensor):
@@ -267,8 +261,8 @@ def non_max_suppression(prediction, conf_thres=0.5, nms_thres=0.4):
 def build_targets(pred_boxes, pred_cls, target, anchors, ignore_thres, device):
     nB = pred_boxes.size(0)
     nA = pred_boxes.size(1)
-    nC = pred_cls.size(-1)
     nG = pred_boxes.size(2)
+    nC = pred_cls.size(-1)
 
     # Output tensors
     obj_mask = torch.ByteTensor(nB, nA, nG, nG).fill_(0).to(device)
@@ -290,7 +284,9 @@ def build_targets(pred_boxes, pred_cls, target, anchors, ignore_thres, device):
 
     best_ious, best_n = ious.max(0)
     # Separate target values
+
     b, target_labels = target[:, :2].long().t()
+
     gx, gy = gxy.t()
     gw, gh = gwh.t()
     gi, gj = gxy.long().t()
@@ -300,14 +296,10 @@ def build_targets(pred_boxes, pred_cls, target, anchors, ignore_thres, device):
 
     # Set noobj mask to zero where iou exceeds ignore threshold
     for i, anchor_ious in enumerate(ious.t()):
-        print(anchor_ious)
-
         e1 = b[i]
         e2 = anchor_ious > ignore_thres
         e3 = gj[i]
         e4 = gi[i]
-        print(e1, e2.size(), e3, e4)
-        print(e2)
         noobj_mask[e1, e2, e3, e4] = 0
 
     # Coordinates

@@ -22,7 +22,7 @@ if __name__ == '__main__':
             line = os.path.join(image_root, child_path, img)
 
             line_label = line.replace('images', 'labels').replace('jpg', 'txt').replace('png', 'txt')
-            if os.path.getsize(line_label) > 0:
+            if len(open(line_label).readlines()) < 100:
                 train_txt.write(line + '\n')
 
     train_txt.close()

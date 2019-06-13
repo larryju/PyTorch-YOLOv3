@@ -81,7 +81,6 @@ class ListDataset(Dataset):
         # ---------
 
         img_path = self.img_files[index % len(self.img_files)].rstrip()
-
         # Extract image as PyTorch tensor
         img = transforms.ToTensor()(Image.open(img_path).convert('RGB'))
 
@@ -128,6 +127,7 @@ class ListDataset(Dataset):
         if self.augment:
             if np.random.random() < 0.5:
                 img, targets = horisontal_flip(img, targets)
+        # print(0, img.size(), targets.size())
 
         return img_path, img, targets
 
@@ -145,6 +145,7 @@ class ListDataset(Dataset):
         # Resize images to input shape
         imgs = torch.stack([resize(img, self.img_size) for img in imgs])
         self.batch_count += 1
+        # print(1, imgs.size(), targets.size())
         return paths, imgs, targets
 
     def __len__(self):

@@ -40,9 +40,9 @@ def evaluate(model, path, iou_thres, conf_thres, nms_thres, img_size, batch_size
         targets[:, 2:] *= img_size
 
         imgs = imgs.float().to(device)
-
+        model.to(device)
         with torch.no_grad():
-            outputs = model(imgs)
+            outputs = model(imgs, device=device)
             outputs = non_max_suppression(outputs, conf_thres=conf_thres, nms_thres=nms_thres)
 
         sample_metrics += get_batch_statistics(outputs, targets, iou_threshold=iou_thres)
