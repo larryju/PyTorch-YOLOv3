@@ -22,16 +22,14 @@ if __name__ == "__main__":
     parser.add_argument("--model_def", type=str, default="config/yolov3-tiny.cfg", help="path to model definition file")
     parser.add_argument("--data_config", type=str, default="config/face_test.data", help="path to data config file")
     parser.add_argument("--pretrained_weights", type=str, default='', help="if specified starts from checkpoint model")
-    parser.add_argument("--n_cpu", type=int, default=0, help="number of cpu threads to use during batch generation")
+    parser.add_argument("--n_cpu", type=int, default=4, help="number of cpu threads to use during batch generation")
     parser.add_argument("--img_size", type=int, default=416, help="size of each image dimension")
     parser.add_argument("--checkpoint_interval", type=int, default=1, help="interval between saving model weights")
-    parser.add_argument("--evaluation_interval", type=int, default=1, help="interval evaluations on validation set")
+    parser.add_argument("--evaluation_interval", type=int, default=5, help="interval evaluations on validation set")
     parser.add_argument("--compute_map", default=False, help="if True computes mAP every tenth batch")
     parser.add_argument("--multiscale_training", default=False, help="allow for multi-scale training")
     opt = parser.parse_args()
     print(opt)
-
-    # logger = Logger("logs")
 
     device = torch.device("cuda:1" if torch.cuda.is_available() else "cpu")
 
@@ -62,7 +60,7 @@ if __name__ == "__main__":
         batch_size=opt.batch_size,
         shuffle=False,
         num_workers=opt.n_cpu,
-        pin_memory=False,
+        pin_memory=True,
         collate_fn=dataset.collate_fn,
     )
 
@@ -113,6 +111,7 @@ if __name__ == "__main__":
             epoch_batches_left = len(dataloader) - (batch_i + 1)
             time_left = datetime.timedelta(seconds=epoch_batches_left * (time.time() - start_time) / (batch_i + 1))
             log_str += f"\n---- ETA {time_left}"
+
 
             print(log_str)
 

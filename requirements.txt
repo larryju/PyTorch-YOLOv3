@@ -5,3 +5,4 @@ matplotlib
 terminaltables
 pillow
 tqdm
+flask
